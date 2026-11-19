@@ -1,0 +1,22 @@
+obstacle_detector:
+  ros__parameters:
+    # Frame used for the published obstacles and RViz markers. The lidar
+    # geometry is expressed directly in the sensor frame.
+    output_frame: laser_link
+
+    # Two neighbouring valid scan points belong to the same obstacle while
+    # their Euclidean separation stays below this value (metres).
+    cluster_distance: 0.30
+
+    # Clusters with fewer points are discarded as noise.
+    min_cluster_points: 5
+
+    # Returns outside this range are ignored (metres).
+    min_range: 0.12
+    max_range: 12.0
+
+    # Log a warning when the nearest obstacle is closer than this (metres).
+    warning_distance: 1.0
+
+    # Lifetime of the RViz markers (seconds).
+    marker_lifetime: 0.5

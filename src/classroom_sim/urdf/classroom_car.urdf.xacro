@@ -1,0 +1,214 @@
+<?xml version="1.0"?>
+<robot name="classroom_car" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===================== Parameters ===================== -->
+  <xacro:property name="mesh_dir"
+                  value="$(find classroom_sim)/models/classroom_car/meshes"/>
+  <xacro:property name="wheel_radius" value="0.06"/>
+  <xacro:property name="wheel_width" value="0.04"/>
+  <xacro:property name="track" value="0.34"/>
+  <xacro:property name="axle_x" value="0.13"/>
+  <xacro:property name="wheel_z" value="-0.03"/>
+  <xacro:property name="base_mass" value="3.0"/>
+  <xacro:property name="wheel_mass" value="0.4"/>
+  <xacro:property name="laser_mass" value="0.1"/>
+
+  <material name="car_blue">
+    <color rgba="0.10 0.35 0.85 1.0"/>
+  </material>
+  <material name="car_glass">
+    <color rgba="0.05 0.16 0.24 0.9"/>
+  </material>
+  <material name="car_light">
+    <color rgba="1.0 0.86 0.45 1.0"/>
+  </material>
+  <material name="wheel_dark">
+    <color rgba="0.05 0.05 0.05 1.0"/>
+  </material>
+  <material name="laser_red">
+    <color rgba="0.85 0.12 0.12 1.0"/>
+  </material>
+
+  <!-- ===================== Base link (Blender body mesh) ===================== -->
+  <link name="base_link">
+    <inertial>
+      <mass value="${base_mass}"/>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <inertia
+        ixx="0.0289" ixy="0.0" ixz="0.0"
+        iyy="0.0505" iyz="0.0"
+        izz="0.0666"/>
+    </inertial>
+
+    <visual name="body">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="file://${mesh_dir}/car_body.stl"/>
+      </geometry>
+      <material name="car_blue"/>
+    </visual>
+    <visual name="glass">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="file://${mesh_dir}/car_glass.stl"/>
+      </geometry>
+      <material name="car_glass"/>
+    </visual>
+    <visual name="lights">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="file://${mesh_dir}/car_lights.stl"/>
+      </geometry>
+      <material name="car_light"/>
+    </visual>
+
+    <collision name="chassis">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.42 0.30 0.10"/>
+      </geometry>
+    </collision>
+    <collision name="cabin">
+      <origin xyz="-0.03 0 0.10" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.22 0.24 0.10"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ===================== Wheels ===================== -->
+  <!-- rear wheels are driven, front wheels roll freely (low friction) -->
+  <xacro:macro name="car_wheel" params="name x_pos y_pos mu">
+    <link name="${name}_wheel_link">
+      <inertial>
+        <mass value="${wheel_mass}"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia
+          ixx="0.000413" ixy="0.0" ixz="0.0"
+          iyy="0.000720" iyz="0.0"
+          izz="0.000413"/>
+      </inertial>
+      <visual name="visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="file://${mesh_dir}/wheel.stl"/>
+        </geometry>
+        <material name="wheel_dark"/>
+      </visual>
+      <collision name="collision">
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${name}_wheel_link"/>
+      <origin xyz="${x_pos} ${y_pos} ${wheel_z}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <dynamics damping="0.05" friction="0.0"/>
+    </joint>
+
+    <gazebo reference="${name}_wheel_link">
+      <mu1>${mu}</mu1>
+      <mu2>${mu}</mu2>
+      <kp>1000000.0</kp>
+      <kd>10.0</kd>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:car_wheel name="rear_left" x_pos="${-axle_x}"
+                   y_pos="${track / 2.0}" mu="1.0"/>
+  <xacro:car_wheel name="rear_right" x_pos="${-axle_x}"
+                   y_pos="${-track / 2.0}" mu="1.0"/>
+  <xacro:car_wheel name="front_left" x_pos="${axle_x}"
+                   y_pos="${track / 2.0}" mu="0.05"/>
+  <xacro:car_wheel name="front_right" x_pos="${axle_x}"
+                   y_pos="${-track / 2.0}" mu="0.05"/>
+
+  <!-- ===================== 2D lidar on the roof ===================== -->
+  <link name="laser_link">
+    <inertial>
+      <mass value="${laser_mass}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+        ixx="0.000044" ixy="0.0" ixz="0.0"
+        iyy="0.000044" iyz="0.0"
+        izz="0.000061"/>
+    </inertial>
+    <visual name="visual">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.035" length="0.04"/>
+      </geometry>
+      <material name="laser_red"/>
+    </visual>
+    <collision name="collision">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.035" length="0.04"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="laser_link"/>
+    <origin xyz="0 0 0.18" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="laser_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <topic>/scan</topic>
+      <update_rate>10.0</update_rate>
+      <alwaysOn>1</alwaysOn>
+      <visualize>true</visualize>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159265</min_angle>
+            <max_angle>3.14159265</max_angle>
+          </horizontal>
+          <vertical>
+            <samples>1</samples>
+            <resolution>1</resolution>
+            <min_angle>0.0</min_angle>
+            <max_angle>0.0</max_angle>
+          </vertical>
+        </scan>
+        <range>
+          <min>0.12</min>
+          <max>12.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise type="gaussian">
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+  <!-- ===================== Differential drive ===================== -->
+  <gazebo>
+    <plugin filename="ignition-gazebo-diff-drive-system"
+            name="gz::sim::systems::DiffDrive">
+      <left_joint>rear_left_wheel_joint</left_joint>
+      <right_joint>rear_right_wheel_joint</right_joint>
+      <wheel_separation>${track}</wheel_separation>
+      <wheel_radius>${wheel_radius}</wheel_radius>
+      <max_linear_acceleration>1.5</max_linear_acceleration>
+      <max_angular_acceleration>3.0</max_angular_acceleration>
+      <max_linear_velocity>0.8</max_linear_velocity>
+      <max_angular_velocity>2.0</max_angular_velocity>
+      <publish_odom_tf>false</publish_odom_tf>
+      <publish_wheel_tf>false</publish_wheel_tf>
+      <odom_publish_frequency>30.0</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+
+</robot>

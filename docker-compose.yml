@@ -1,0 +1,47 @@
+services:
+  sim:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: ros2-lidar-sim:humble
+    container_name: ros2_lidar_sim
+    stdin_open: true
+    tty: true
+    environment:
+      # macOS: host.docker.internal:0 (XQuartz). Linux: export DISPLAY=:0.
+      DISPLAY: ${DISPLAY:-host.docker.internal:0}
+      QT_X11_NO_MITSHM: "1"
+      LIBGL_ALWAYS_SOFTWARE: ${LIBGL_ALWAYS_SOFTWARE:-0}
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-42}
+    volumes:
+      - ./src:/workspace/src
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    # On Linux with a GPU, uncomment to expose the render node:
+    # devices:
+    #   - /dev/dri:/dev/dri
+    command: bash
+
+  # Headless GUI: Xvfb + VNC + noVNC, viewable in a browser.  No XQuartz
+  # or admin rights needed.  Open http://localhost:6080/vnc.html
+  gui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: ros2-lidar-sim:humble
+    container_name: ros2_lidar_gui
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    environment:
+      DISPLAY: ":99"
+      QT_X11_NO_MITSHM: "1"
+      LIBGL_ALWAYS_SOFTWARE: ${LIBGL_ALWAYS_SOFTWARE:-1}
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-42}
+    volumes:
+      - ./src:/workspace/src
+    ports:
+      - "6080:6080"
+      - "5900:5900"
+    # Brings up the virtual display, then the full classroom simulation
+    # (headless server + Gazebo GUI + RViz on :99).
+    command: bash -lc "/usr/local/bin/start_gui.sh && exec ros2 launch classroom_sim classroom.launch.py"
